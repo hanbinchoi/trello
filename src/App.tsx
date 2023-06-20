@@ -8,10 +8,11 @@ import { useRecoilState } from "recoil";
 import { styled } from "styled-components";
 import { toDoState } from "./atoms";
 import DragabbleCard from "./Components/DragabbleCard";
+import Board from "./Components/Board";
 
 const Wrapper = styled.div`
   display: flex;
-  max-width: 480px;
+  max-width: 680px;
   width: 100%;
   margin: 0 auto;
   justify-content: center;
@@ -22,34 +23,53 @@ const Wrapper = styled.div`
 const Boards = styled.div`
   display: grid;
   width: 100%;
-  grid-template-columns: repeat(1, 1fr);
-`;
-
-const Board = styled.div`
-  padding: 20px 10px;
-  padding-top: 30px;
-  background-color: ${(props) => props.theme.boardColor};
-  border-radius: 5px;
-  min-height: 200px;
+  gap: 10px;
+  grid-template-columns: repeat(3, 1fr);
 `;
 
 function App() {
   // atom으로 부터 todo list를 가져온다
   const [toDos, setToDos] = useRecoilState(toDoState);
-  const onDragEnd = ({ draggableId, destination, source }: DropResult) => {
-    // drag가 끝날때 실행되는 함수
+  const onDragEnd = (info: DropResult) => {
+    console.log(info);
+    const { destination, draggableId, source } = info;
+
+    // destination이 정의되지 않았을때는 함수종료
     if (!destination) return;
-    setToDos((oldToDos) => {
-      // Copy [1,2,3,4] => [1,2,3,4]
-      const copyToDos = [...oldToDos];
-      // 1) delete item on source.index
-      // [1,2,3,4], source.index=0 => [1]
-      copyToDos.splice(source.index, 1);
-      // 2) put back the item on the destination.index
-      // [2,3,4], dragabbleId=1, destination.index=3 => [2,3,4,1]
-      copyToDos.splice(destination?.index, 0, draggableId);
-      return copyToDos;
-    });
+
+    if (destination?.droppableId === source.droppableId) {
+      // same board movement.
+      setToDos((allBoards) => {
+        const boardCopy = [...allBoards[source.droppableId]];
+        // 1) delete item on source.index
+        // [1,2,3,4], source.index=0 => [1]
+        boardCopy.splice(source.index, 1);
+        // 2) put back the item on the destination.index
+        // [2,3,4], dragabbleId=1, destination.index=3 => [2,3,4,1]
+        boardCopy.splice(destination?.index, 0, draggableId);
+        return {
+          ...allBoards,
+          [source.droppableId]: boardCopy,
+        };
+      });
+    }
+
+    if (destination.droppableId !== source.droppableId) {
+      // cross board movement
+      setToDos((allBoards) => {
+        // 1. 출발지와 도착지 찾기
+        const sourceBoard = [...allBoards[source.droppableId]];
+        const destinationBoard = [...allBoards[destination.droppableId]];
+        // 2. 출발지에서 먼저 삭제해줌
+        sourceBoard.splice(source.index, 1);
+        destinationBoard.splice(destination.index, 0, draggableId);
+        return {
+          ...allBoards,
+          [source.droppableId]: sourceBoard,
+          [destination.droppableId]: destinationBoard,
+        };
+      });
+    }
   };
   return (
     // react18과 호환 문제로 strict mode를 꺼서 진행하자
@@ -59,23 +79,9 @@ function App() {
     <DragDropContext onDragEnd={onDragEnd}>
       <Wrapper>
         <Boards>
-          <div>
-            {/* 드롭할 수 있는 영역을 명시 */}
-            <Droppable droppableId="one">
-              {(magic) => (
-                // ref - 라이브러리에서 컴포넌트 DOM을 조작하기 위해 필수로 등록해줘야 한다.
-                // droppableProps - 우리가 전달한 prop를 라이브러리에서 사용할 수 있는 형태로 DOM data에 등록시켜줌
-                <Board ref={magic.innerRef} {...magic.droppableProps}>
-                  {toDos.map((todo, index) => (
-                    // 드래그 할 수 있는 컴포넌트
-                    <DragabbleCard key={todo} index={index} todo={todo} />
-                  ))}
-                  {/* drop될 때 공간을 만들기 위해서 필요 */}
-                  {magic.placeholder}
-                </Board>
-              )}
-            </Droppable>
-          </div>
+          {Object.keys(toDos).map((boardId) => (
+            <Board boardId={boardId} key={boardId} toDos={toDos[boardId]} />
+          ))}
         </Boards>
       </Wrapper>
     </DragDropContext>
