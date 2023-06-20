@@ -13,14 +13,15 @@ const Card = styled.div<{ isDragging: boolean }>`
 `;
 
 interface IDragabbleCardProps {
-  todo: string;
+  toDoId: number;
+  toDoText: string;
   index: number;
 }
 
-function DragabbleCard({ todo, index }: IDragabbleCardProps) {
+function DragabbleCard({ toDoId, toDoText, index }: IDragabbleCardProps) {
   return (
     // index는 리스트의 순서대로 입력해야 한다
-    <Draggable key={todo} draggableId={todo} index={index}>
+    <Draggable key={toDoId} draggableId={toDoId + ""} index={index}>
       {(magic, snapshot) => (
         <Card
           isDragging={snapshot.isDragging}
@@ -32,7 +33,7 @@ function DragabbleCard({ todo, index }: IDragabbleCardProps) {
           // 실제 drag 할수있는 element를 지정
           {...magic.dragHandleProps}
         >
-          {todo}
+          {toDoText}
         </Card>
       )}
     </Draggable>

@@ -1,6 +1,10 @@
 import { Droppable } from "react-beautiful-dnd";
 import DragabbleCard from "./DragabbleCard";
 import { styled } from "styled-components";
+import { useRef } from "react";
+import { useForm } from "react-hook-form";
+import { ITodo, toDoState } from "../atoms";
+import { useSetRecoilState } from "recoil";
 
 const Wrapper = styled.div`
   padding-top: 10px;
@@ -13,7 +17,7 @@ const Wrapper = styled.div`
 `;
 
 interface IBoardProps {
-  toDos: string[];
+  toDos: ITodo[];
   boardId: string;
 }
 
@@ -34,10 +38,40 @@ const Area = styled.div<IAreaProps>`
   padding: 20px;
 `;
 
+const Form = styled.form`
+  width: 100%;
+`;
+
+interface IForm {
+  toDo: string;
+}
+
 function Board({ toDos, boardId }: IBoardProps) {
+  const setToDos = useSetRecoilState(toDoState);
+  const { register, setValue, handleSubmit } = useForm<IForm>();
+  const onValid = ({ toDo }: IForm) => {
+    const newToDo = {
+      id: Date.now(),
+      text: toDo,
+    };
+    setToDos((allBoards) => {
+      return {
+        ...allBoards,
+        [boardId]: [...allBoards[boardId], newToDo],
+      };
+    });
+    setValue("toDo", "");
+  };
   return (
     <Wrapper>
       <h1>{boardId}</h1>
+      <Form onSubmit={handleSubmit(onValid)}>
+        <input
+          {...register("toDo", { required: true })}
+          type="tex"
+          placeholder={`Add task on ${boardId}`}
+        />
+      </Form>
       {/* 드롭할 수 있는 영역을 명시 */}
       <Droppable droppableId={boardId}>
         {(magic, snapshot) => (
@@ -53,7 +87,12 @@ function Board({ toDos, boardId }: IBoardProps) {
           >
             {toDos.map((todo, index) => (
               // 드래그 할 수 있는 컴포넌트
-              <DragabbleCard key={todo} index={index} todo={todo} />
+              <DragabbleCard
+                key={todo.id}
+                index={index}
+                toDoId={todo.id}
+                toDoText={todo.text}
+              />
             ))}
             {/* drop될 때 공간을 만들기 위해서 필요 */}
             {magic.placeholder}
