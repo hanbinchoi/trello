@@ -1,13 +1,7 @@
-import {
-  DragDropContext,
-  Draggable,
-  DropResult,
-  Droppable,
-} from "react-beautiful-dnd";
+import { DragDropContext, DropResult } from "react-beautiful-dnd";
 import { useRecoilState } from "recoil";
 import { styled } from "styled-components";
 import { toDoState } from "./atoms";
-import DragabbleCard from "./Components/DragabbleCard";
 import Board from "./Components/Board";
 
 const Wrapper = styled.div`
@@ -41,12 +35,13 @@ function App() {
       // same board movement.
       setToDos((allBoards) => {
         const boardCopy = [...allBoards[source.droppableId]];
+        const taskObj = boardCopy[source.index];
         // 1) delete item on source.index
         // [1,2,3,4], source.index=0 => [1]
         boardCopy.splice(source.index, 1);
         // 2) put back the item on the destination.index
         // [2,3,4], dragabbleId=1, destination.index=3 => [2,3,4,1]
-        boardCopy.splice(destination?.index, 0, draggableId);
+        boardCopy.splice(destination?.index, 0, taskObj);
         return {
           ...allBoards,
           [source.droppableId]: boardCopy,
@@ -59,10 +54,11 @@ function App() {
       setToDos((allBoards) => {
         // 1. 출발지와 도착지 찾기
         const sourceBoard = [...allBoards[source.droppableId]];
+        const taskObj = sourceBoard[source.index];
         const destinationBoard = [...allBoards[destination.droppableId]];
         // 2. 출발지에서 먼저 삭제해줌
         sourceBoard.splice(source.index, 1);
-        destinationBoard.splice(destination.index, 0, draggableId);
+        destinationBoard.splice(destination.index, 0, taskObj);
         return {
           ...allBoards,
           [source.droppableId]: sourceBoard,
@@ -72,8 +68,14 @@ function App() {
     }
   };
   return (
-    // react18과 호환 문제로 strict mode를 꺼서 진행하자
+    /*
+    1. style 수정
+    2. local storage
+    3. todo 삭제 기능 (드롭)
+    4. board 순서바꾸기, 생성하기
+    */
 
+    // react18과 호환 문제로 strict mode를 꺼서 진행하자
     // ContextAPI의 Provider처럼 DND의 상태를 제공해주는 컴포넌트.
     // onDragEnd 이벤트 처리도 여기서 한다.
     <DragDropContext onDragEnd={onDragEnd}>
